@@ -42,3 +42,15 @@ int insert_symbol(SymbolEntry* entry) {
     hash_table[index] = new_node;
     return 1; // success
 }
+
+SymbolEntry* find_symbol(const char* name) {
+    unsigned int index = hash_pjw(name);
+    HashNode* p = hash_table[index];
+    while (p) {
+        if (strcmp(p->entry->name, name) == 0) {
+            return p->entry;
+        }
+        p = p->next;
+    }
+    return NULL;
+}

@@ -61,6 +61,7 @@ typedef struct TreeNode{
         char* t_str;
     } val;
     unsigned int line;
+    unsigned int prod_id; // production id
     struct children {
         struct TreeNode* head;
         struct TreeNode* end;

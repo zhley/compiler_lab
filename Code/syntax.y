@@ -39,103 +39,103 @@
 
 %%
 /* High-level definition */
-Program : ExtDefList { ADD_NODE1(Program, $$, $1) root = $$; }
+Program : ExtDefList { ADD_NODE1(Program, $$, $1) $$->prod_id = 1; root = $$; }
     ;
-ExtDefList : ExtDef ExtDefList { ADD_NODE2(ExtDefList, $$, $1, $2) }
+ExtDefList : ExtDef ExtDefList { ADD_NODE2(ExtDefList, $$, $1, $2) $$->prod_id = 1; }
     | { $$ = NULL; }
     ;
-ExtDef : Specifier ExtDecList SEMI { ADD_NODE3(ExtDef, $$, $1, $2, $3) }
-    | Specifier SEMI { ADD_NODE2(ExtDef, $$, $1, $2) }
-    | Specifier FunDec CompSt { ADD_NODE3(ExtDef, $$, $1, $2, $3) }
+ExtDef : Specifier ExtDecList SEMI { ADD_NODE3(ExtDef, $$, $1, $2, $3) $$->prod_id = 1; }
+    | Specifier SEMI { ADD_NODE2(ExtDef, $$, $1, $2) $$->prod_id = 2; }
+    | Specifier FunDec CompSt { ADD_NODE3(ExtDef, $$, $1, $2, $3) $$->prod_id = 3; }
     | error SEMI
     ;
-ExtDecList : VarDec { ADD_NODE1(ExtDecList, $$, $1) }
-    | VarDec COMMA ExtDecList { ADD_NODE3(ExtDecList, $$, $1, $2, $3) }
+ExtDecList : VarDec { ADD_NODE1(ExtDecList, $$, $1) $$->prod_id = 1; }
+    | VarDec COMMA ExtDecList { ADD_NODE3(ExtDecList, $$, $1, $2, $3) $$->prod_id = 2; }
     ;
 
 /* Specifier */
-Specifier : TYPE { ADD_NODE1(Specifier, $$, $1) }
-    | StructSpecifier { ADD_NODE1(Specifier, $$, $1) }
+Specifier : TYPE { ADD_NODE1(Specifier, $$, $1) $$->prod_id = 1; }
+    | StructSpecifier { ADD_NODE1(Specifier, $$, $1) $$->prod_id = 2; }
     ;
-StructSpecifier : STRUCT OptTag LC DefList RC { ADD_NODE5(StructSpecifier, $$, $1, $2, $3, $4, $5) }
-    | STRUCT Tag { ADD_NODE2(StructSpecifier, $$, $1, $2) }
+StructSpecifier : STRUCT OptTag LC DefList RC { ADD_NODE5(StructSpecifier, $$, $1, $2, $3, $4, $5) $$->prod_id = 1; }
+    | STRUCT Tag { ADD_NODE2(StructSpecifier, $$, $1, $2) $$->prod_id = 2; }
     | STRUCT error RC
     ;
-OptTag : ID { ADD_NODE1(OptTag, $$, $1) }
+OptTag : ID { ADD_NODE1(OptTag, $$, $1) $$->prod_id = 1; }
     | { $$ = NULL; }
     ;
-Tag : ID { ADD_NODE1(Tag, $$, $1) }
+Tag : ID { ADD_NODE1(Tag, $$, $1) $$->prod_id = 1; }
     ;
 
 /* Declarator */
-VarDec : ID { ADD_NODE1(VarDec, $$, $1) }
-    | VarDec LB INT RB { ADD_NODE4(VarDec, $$, $1, $2, $3, $4) }
+VarDec : ID { ADD_NODE1(VarDec, $$, $1) $$->prod_id = 1; }
+    | VarDec LB INT RB { ADD_NODE4(VarDec, $$, $1, $2, $3, $4) $$->prod_id = 2; }
     | VarDec LB error RB
     ;
-FunDec : ID LP VarList RP  { ADD_NODE4(FunDec, $$, $1, $2, $3, $4) }
-    | ID LP RP { ADD_NODE3(FunDec, $$, $1, $2, $3) }
+FunDec : ID LP VarList RP  { ADD_NODE4(FunDec, $$, $1, $2, $3, $4) $$->prod_id = 1; }
+    | ID LP RP { ADD_NODE3(FunDec, $$, $1, $2, $3) $$->prod_id = 2; }
     | ID LP error RP
     ;
-VarList : ParamDec COMMA VarList { ADD_NODE3(VarList, $$, $1, $2, $3) }
-    | ParamDec { ADD_NODE1(VarList, $$, $1) }
+VarList : ParamDec COMMA VarList { ADD_NODE3(VarList, $$, $1, $2, $3) $$->prod_id = 1; }
+    | ParamDec { ADD_NODE1(VarList, $$, $1) $$->prod_id = 2; }
     ;
-ParamDec : Specifier VarDec { ADD_NODE2(ParamDec, $$, $1, $2) }
+ParamDec : Specifier VarDec { ADD_NODE2(ParamDec, $$, $1, $2) $$->prod_id = 1; }
     ;
 
 /* Statement */
-CompSt : LC DefList StmtList RC { ADD_NODE4(CompSt, $$, $1, $2, $3, $4) }
+CompSt : LC DefList StmtList RC { ADD_NODE4(CompSt, $$, $1, $2, $3, $4) $$->prod_id = 1; }
     | error RC
     ;
-StmtList : Stmt StmtList { ADD_NODE2(StmtList, $$, $1, $2) }
+StmtList : Stmt StmtList { ADD_NODE2(StmtList, $$, $1, $2) $$->prod_id = 1; }
     | { $$ = NULL; }
     ;
-Stmt : Exp SEMI { ADD_NODE2(Stmt, $$, $1, $2) }
-    | CompSt { ADD_NODE1(Stmt, $$, $1) }
-    | RETURN Exp SEMI { ADD_NODE3(Stmt, $$, $1, $2, $3) }
-    | IF LP Exp RP Stmt %prec ELSE { ADD_NODE5(Stmt, $$, $1, $2, $3, $4, $5) }
-    | IF LP Exp RP Stmt ELSE Stmt { ADD_NODE7(Stmt, $$, $1, $2, $3, $4, $5, $6, $7) }
-    | WHILE LP Exp RP Stmt { ADD_NODE5(Stmt, $$, $1, $2, $3, $4, $5) }
+Stmt : Exp SEMI { ADD_NODE2(Stmt, $$, $1, $2) $$->prod_id = 1; }
+    | CompSt { ADD_NODE1(Stmt, $$, $1) $$->prod_id = 2; }
+    | RETURN Exp SEMI { ADD_NODE3(Stmt, $$, $1, $2, $3) $$->prod_id = 3; }
+    | IF LP Exp RP Stmt %prec ELSE { ADD_NODE5(Stmt, $$, $1, $2, $3, $4, $5) $$->prod_id = 4; }
+    | IF LP Exp RP Stmt ELSE Stmt { ADD_NODE7(Stmt, $$, $1, $2, $3, $4, $5, $6, $7) $$->prod_id = 5; }
+    | WHILE LP Exp RP Stmt { ADD_NODE5(Stmt, $$, $1, $2, $3, $4, $5) $$->prod_id = 6; }
     | error SEMI 
     ;
 
 /* Local definition */
-DefList : Def DefList { ADD_NODE2(DefList, $$, $1, $2) }
+DefList : Def DefList { ADD_NODE2(DefList, $$, $1, $2) $$->prod_id = 1; }
     | { $$ = NULL; }
     ;
-Def : Specifier DecList SEMI { ADD_NODE3(Def, $$, $1, $2, $3) }
+Def : Specifier DecList SEMI { ADD_NODE3(Def, $$, $1, $2, $3) $$->prod_id = 1; }
     | Specifier error SEMI
     ;
-DecList : Dec { ADD_NODE1(DecList, $$, $1) }
-    | Dec COMMA DecList { ADD_NODE3(DecList, $$, $1, $2, $3) }
+DecList : Dec { ADD_NODE1(DecList, $$, $1) $$->prod_id = 1; }
+    | Dec COMMA DecList { ADD_NODE3(DecList, $$, $1, $2, $3) $$->prod_id = 2; }
     ;
-Dec : VarDec { ADD_NODE1(Dec, $$, $1) }
-    | VarDec ASSIGNOP Exp { ADD_NODE3(Dec, $$, $1, $2, $3) }
+Dec : VarDec { ADD_NODE1(Dec, $$, $1) $$->prod_id = 1; }
+    | VarDec ASSIGNOP Exp { ADD_NODE3(Dec, $$, $1, $2, $3) $$->prod_id = 2; }
     ;
 
 /* Expression */
-Exp : Exp ASSIGNOP Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp AND Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp OR Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp RELOP Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp PLUS Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp MINUS Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp STAR Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp DIV Exp { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | LP Exp RP { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | MINUS Exp %prec MINUS_S { ADD_NODE2(Exp, $$, $1, $2) }
-    | NOT Exp { ADD_NODE2(Exp, $$, $1, $2) }
-    | ID LP Args RP { ADD_NODE4(Exp, $$, $1, $2, $3, $4) }
-    | ID LP RP { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | Exp LB Exp RB { ADD_NODE4(Exp, $$, $1, $2, $3, $4) }
-    | Exp DOT ID { ADD_NODE3(Exp, $$, $1, $2, $3) }
-    | ID { ADD_NODE1(Exp, $$, $1) }
-    | INT { ADD_NODE1(Exp, $$, $1) }
-    | FLOAT { ADD_NODE1(Exp, $$, $1) }
+Exp : Exp ASSIGNOP Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 1; }
+    | Exp AND Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 2; }
+    | Exp OR Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 3; }
+    | Exp RELOP Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 4; }
+    | Exp PLUS Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 5; }
+    | Exp MINUS Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 6; }
+    | Exp STAR Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 7; }
+    | Exp DIV Exp { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 8; }
+    | LP Exp RP { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 9; }
+    | MINUS Exp %prec MINUS_S { ADD_NODE2(Exp, $$, $1, $2) $$->prod_id = 10; }
+    | NOT Exp { ADD_NODE2(Exp, $$, $1, $2) $$->prod_id = 11; }
+    | ID LP Args RP { ADD_NODE4(Exp, $$, $1, $2, $3, $4) $$->prod_id = 12; }
+    | ID LP RP { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 13; }
+    | Exp LB Exp RB { ADD_NODE4(Exp, $$, $1, $2, $3, $4) $$->prod_id = 14; }
+    | Exp DOT ID { ADD_NODE3(Exp, $$, $1, $2, $3) $$->prod_id = 15; }
+    | ID { ADD_NODE1(Exp, $$, $1) $$->prod_id = 16; }
+    | INT { ADD_NODE1(Exp, $$, $1) $$->prod_id = 17; }
+    | FLOAT { ADD_NODE1(Exp, $$, $1) $$->prod_id = 18; }
     | LP error RP
     | Exp LB error RB
     ;
-Args : Exp COMMA Args { ADD_NODE3(Args, $$, $1, $2, $3) }
-    | Exp { ADD_NODE1(Args, $$, $1) }
+Args : Exp COMMA Args { ADD_NODE3(Args, $$, $1, $2, $3) $$->prod_id = 1; }
+    | Exp { ADD_NODE1(Args, $$, $1) $$->prod_id = 2; }
     ;
 
 %%

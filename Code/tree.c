@@ -60,6 +60,7 @@ TreeNode* create_node(SyntaxUnit type){
     node->children.head = NULL;
     node->children.end = NULL;
     node->line = -1;
+    node->prod_id = 0;
     node->next = NULL;
     return node;
 }
