@@ -1,0 +1,6 @@
+*.o
+Code/parser
+Code/syntax.tab.c
+Code/syntax.tab.h
+Code/syntax.output
+Code/lex.yy.c
