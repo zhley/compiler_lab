@@ -49,4 +49,12 @@ SymbolEntry* find_symbol(const char* name);
 
 FieldList* find_field(Type* struct_type, const char* field_name);
 
+int type_equal(Type* a, Type* b);
+
+#define IS_INT(t) ((t) && (t)->kind == BASIC && (t)->basic == 1)
+#define IS_FLOAT(t) ((t) && (t)->kind == BASIC && (t)->basic == 0)
+
+extern Type INT;
+extern Type FLOAT;
+
 #endif

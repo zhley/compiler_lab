@@ -4,6 +4,9 @@
 
 #define HASH_SIZE 0x3fff
 
+Type INT = {BASIC, 1};
+Type FLOAT = {BASIC, 0};
+
 typedef struct HashNode {
     SymbolEntry* entry;
     struct HashNode* next;
