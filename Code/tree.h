@@ -62,17 +62,15 @@ typedef struct TreeNode{
     } val;
     unsigned int line;
     unsigned int prod_id; // production id
-    struct children {
-        struct TreeNode* head;
-        struct TreeNode* end;
-    } children;
-    struct TreeNode* next;
+
+    struct TreeNode** child;
+    unsigned int child_size;
 } TreeNode;
 
 extern const char* su_names[SU_NUM_SYNTAX_UNITS];
 
-TreeNode* create_node(SyntaxUnit type);
-void add_node(TreeNode* node, TreeNode* child);
+TreeNode* create_node(SyntaxUnit type, unsigned int child_size);
+void add_node(TreeNode* node, unsigned int child_idx, TreeNode* child);
 void free_tree(TreeNode* node);
 void print_tree(TreeNode* root);
 

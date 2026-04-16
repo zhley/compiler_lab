@@ -5,13 +5,13 @@
     #include "lex.yy.c"
     #include "tree.h"
 
-    #define ADD_NODE1(name, aa, a1) aa = create_node(SU_##name); add_node(aa, a1);
-    #define ADD_NODE2(name, aa, a1, a2) ADD_NODE1(name, aa, a1) add_node(aa, a2);
-    #define ADD_NODE3(name, aa, a1, a2, a3) ADD_NODE2(name, aa, a1, a2) add_node(aa, a3);
-    #define ADD_NODE4(name, aa, a1, a2, a3, a4) ADD_NODE3(name, aa, a1, a2, a3) add_node(aa, a4);
-    #define ADD_NODE5(name, aa, a1, a2, a3, a4, a5) ADD_NODE4(name, aa, a1, a2, a3, a4) add_node(aa, a5);
-    #define ADD_NODE6(name, aa, a1, a2, a3, a4, a5, a6) ADD_NODE5(name, aa, a1, a2, a3, a4, a5) add_node(aa, a6);
-    #define ADD_NODE7(name, aa, a1, a2, a3, a4, a5, a6, a7) ADD_NODE6(name, aa, a1, a2, a3, a4, a5, a6) add_node(aa, a7);
+    #define ADD_NODE1(name, aa, a1) aa = create_node(SU_##name, 1); add_node(aa, 0, a1);
+    #define ADD_NODE2(name, aa, a1, a2) aa = create_node(SU_##name, 2); add_node(aa, 0, a1); add_node(aa, 1, a2);
+    #define ADD_NODE3(name, aa, a1, a2, a3) aa = create_node(SU_##name, 3); add_node(aa, 0, a1); add_node(aa, 1, a2); add_node(aa, 2, a3);
+    #define ADD_NODE4(name, aa, a1, a2, a3, a4) aa = create_node(SU_##name, 4); add_node(aa, 0, a1); add_node(aa, 1, a2); add_node(aa, 2, a3); add_node(aa, 3, a4);
+    #define ADD_NODE5(name, aa, a1, a2, a3, a4, a5) aa = create_node(SU_##name, 5); add_node(aa, 0, a1); add_node(aa, 1, a2); add_node(aa, 2, a3); add_node(aa, 3, a4); add_node(aa, 4, a5);
+    #define ADD_NODE6(name, aa, a1, a2, a3, a4, a5, a6) aa = create_node(SU_##name, 6); add_node(aa, 0, a1); add_node(aa, 1, a2); add_node(aa, 2, a3); add_node(aa, 3, a4); add_node(aa, 4, a5); add_node(aa, 5, a6);
+    #define ADD_NODE7(name, aa, a1, a2, a3, a4, a5, a6, a7) aa = create_node(SU_##name, 7); add_node(aa, 0, a1); add_node(aa, 1, a2); add_node(aa, 2, a3); add_node(aa, 3, a4); add_node(aa, 4, a5); add_node(aa, 5, a6); add_node(aa, 6, a7);
 
     int yylex(void);
     int yyerror(const char*);

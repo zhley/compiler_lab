@@ -1,5 +1,6 @@
 #include "tree.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -54,46 +55,34 @@ const char* su_names[SU_NUM_SYNTAX_UNITS] = {
     "Args"
 };
 
-TreeNode* create_node(SyntaxUnit type){
+TreeNode* create_node(SyntaxUnit type, unsigned int child_size){
     TreeNode* node = (TreeNode*)malloc(sizeof(TreeNode));
     node->type = type;
-    node->children.head = NULL;
-    node->children.end = NULL;
     node->line = -1;
     node->prod_id = 0;
-    node->next = NULL;
+    node->child_size = child_size;
+    node->child = (TreeNode**)malloc(child_size * sizeof(TreeNode*));
+    for(unsigned int i = 0; i < child_size; ++i){
+        node->child[i] = NULL;
+    }
     return node;
 }
 
-void add_node(TreeNode* node, TreeNode* child){
+void add_node(TreeNode* node, unsigned int child_idx, TreeNode* child){
     if(!node || !child) return;
     if(child->line < node->line) node->line = child->line;
-    TreeNode* p = node->children.end;
-    if(!p){
-        node->children.head = child;
-        node->children.end = child;
-        return;
-    }
-    node->children.end->next = child;
-    node->children.end = child;
+    assert(child_idx < node->child_size);
+    node->child[child_idx] = child;
 }
 
+// do not free
 void free_tree(TreeNode* node){
-    TreeNode* p = node->children.head;
-    if(!p) {
-        if(node->type == SU_ID){
-            free(node->val.t_str);
-        }
-        free(node);
-        return;
+    if(!node) return;
+    for(unsigned int i = 0; i < node->child_size; ++i){
+        free_tree(node->child[i]);
     }
-    while(p){
-        TreeNode* t = p;
-        p = p->next;
-        free_tree(t);
-    }
+    free(node->child);
     free(node);
-    return;
 }
 
 void _print(TreeNode* node, int level){
@@ -101,10 +90,12 @@ void _print(TreeNode* node, int level){
         printf("  ");
     }
     printf("%s", su_names[node->type]);
-    if(node->children.head){
+    if(node->child_size > 0){
         printf(" (%d)\n", node->line);
-        for(TreeNode* p = node->children.head; p != NULL; p = p->next){
-            _print(p, level + 1);
+        for(unsigned int i = 0; i < node->child_size; ++i){
+            if(node->child[i]){
+                _print(node->child[i], level + 1);
+            }
         }
     }else{
         switch (node->type){

@@ -23,7 +23,6 @@ int main(int argc, char* argv[]){
     yyrestart(file);
     yyparse();
     if(ok) print_tree(root);
-    free_tree(root);
     fclose(file);
     return 0;
 }

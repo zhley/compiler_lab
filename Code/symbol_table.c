@@ -11,7 +11,7 @@ typedef struct HashNode {
 
 static HashNode* hash_table[HASH_SIZE];
 
-static unsigned int hash_pjw(char *name) {
+static unsigned int hash_pjw(const char *name) {
     unsigned int val = 0, i;
     for (; *name; ++name) {
         val = (val << 2) + *name;
@@ -51,6 +51,16 @@ SymbolEntry* find_symbol(const char* name) {
             return p->entry;
         }
         p = p->next;
+    }
+    return NULL;
+}
+
+FieldList* find_field(Type* struct_type, const char* field_name){
+    if(!struct_type || struct_type->kind != STRUCT) return NULL;
+    for(FieldList* p = struct_type->structure; p; p = p->next){
+        if(strcmp(p->name, field_name) == 0){
+            return p;
+        }
     }
     return NULL;
 }

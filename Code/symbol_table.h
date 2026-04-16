@@ -6,7 +6,7 @@ typedef struct Type {
         BASIC, ARRAY, STRUCT
     } kind;
     union {
-        int basic; // 0 int 1 float
+        int basic; // 1 int 0 float
         struct {
             struct Type* elem;
             int size;
@@ -39,12 +39,14 @@ typedef struct SymbolEntry{
             Type* ret_type;
             FuncParam* params;
         } func_info;
-        FieldList* struct_type;
+        Type* struct_type;
     };
 } SymbolEntry;
 
 void init_symbol_table();
 int insert_symbol(SymbolEntry* entry);
 SymbolEntry* find_symbol(const char* name);
+
+FieldList* find_field(Type* struct_type, const char* field_name);
 
 #endif
