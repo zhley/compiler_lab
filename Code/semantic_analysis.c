@@ -256,7 +256,7 @@ static void handle_def(TreeNode* node){
         handle_var_dec(type, dec->child[0]);
         if(dec->prod_id == 2){
             Type* exp_type = handle_exp(dec->child[2]);
-            if(!type_equal(type, exp_type)){
+            if(type && exp_type && !type_equal(type, exp_type)){
                 print_error(5, dec->line, NULL);
             }
         }
@@ -282,7 +282,7 @@ static void handle_stmt(Type* ret_type, TreeNode* node){
         }
         case 4: { // Stmt : IF LP Exp RP Stmt
             Type* exp_type = handle_exp(node->child[2]);
-            if(!IS_INT(exp_type)){
+            if(exp_type && !IS_INT(exp_type)){
                 // Undefined Error: if condition is not an integer
                 print_error(7, node->child[2]->line, NULL);
             }
@@ -291,7 +291,7 @@ static void handle_stmt(Type* ret_type, TreeNode* node){
         }
         case 5: { // Stmt : IF LP Exp RP Stmt ELSE Stmt
             Type* exp_type = handle_exp(node->child[2]);
-            if(!IS_INT(exp_type)){
+            if(exp_type && !IS_INT(exp_type)){
                 // Undefined Error: if condition is not an integer
                 print_error(7, node->child[2]->line, NULL);
             }
@@ -301,7 +301,7 @@ static void handle_stmt(Type* ret_type, TreeNode* node){
         }
         case 6: { // Stmt : WHILE LP Exp RP Stmt
             Type* exp_type = handle_exp(node->child[2]);
-            if(!IS_INT(exp_type)){
+            if(exp_type && !IS_INT(exp_type)){
                 // Undefined Error: while condition is not an integer
                 print_error(7, node->child[2]->line, NULL);
             }
