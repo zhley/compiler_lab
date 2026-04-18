@@ -88,7 +88,7 @@ static void handle_var_dec(Type* type, TreeNode* node){
             p = p->child[0];
         }
         SymbolEntry* entry = (SymbolEntry*)malloc(sizeof(SymbolEntry));
-        entry->name = p->val.t_str;
+        entry->name = p->child[0]->val.t_str;
         entry->kind = SYM_VAR;
         entry->var_type = cur_type;
         int ok = insert_symbol(entry);
@@ -158,6 +158,15 @@ static Type* handle_struct_specifier(TreeNode* node){
             }
             if(!ok){
                 return NULL;
+            }
+            if(tag_name){
+                SymbolEntry* tag = (SymbolEntry*)malloc(sizeof(SymbolEntry));
+                tag->name = tag_name;
+                tag->kind = SYM_STRUCT_TAG;
+                tag->struct_type = type;
+                if(!insert_symbol(tag)){
+                    print_error(16, node->line, tag_name);
+                }
             }
             return type;
         }
@@ -239,7 +248,7 @@ static void handle_def(TreeNode* node){
     Type* type = handle_specifier(node->child[0]);
     for(TreeNode* dec_list = node->child[1]; dec_list; dec_list = dec_list->prod_id == 1 ? NULL : dec_list->child[2]){
         TreeNode* dec = dec_list->child[0];
-        handle_var_dec(type, dec);
+        handle_var_dec(type, dec->child[0]);
         if(dec->prod_id == 2){
             Type* exp_type = handle_exp(dec->child[2]);
             if(!type_equal(type, exp_type)){

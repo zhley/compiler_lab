@@ -1,6 +1,8 @@
 #include <stdio.h>
 
+#include "symbol_table.h"
 #include "tree.h"
+#include "semantic_analysis.h"
 // Flex
 void yyrestart(FILE*);
 int yylex(void);
@@ -20,9 +22,10 @@ int main(int argc, char* argv[]){
         perror(argv[1]);
         return 1;
     }
+    init_symbol_table();
     yyrestart(file);
     yyparse();
-    if(ok) print_tree(root);
+    if(ok) analyze_semantics(root);
     fclose(file);
     return 0;
 }

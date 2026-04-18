@@ -47,6 +47,7 @@ ExtDefList : ExtDef ExtDefList { ADD_NODE2(ExtDefList, $$, $1, $2) $$->prod_id =
 ExtDef : Specifier ExtDecList SEMI { ADD_NODE3(ExtDef, $$, $1, $2, $3) $$->prod_id = 1; }
     | Specifier SEMI { ADD_NODE2(ExtDef, $$, $1, $2) $$->prod_id = 2; }
     | Specifier FunDec CompSt { ADD_NODE3(ExtDef, $$, $1, $2, $3) $$->prod_id = 3; }
+    | Specifier FunDec SEMI { yyerror("function declaration is not supported in C--"); }
     | error SEMI
     ;
 ExtDecList : VarDec { ADD_NODE1(ExtDecList, $$, $1) $$->prod_id = 1; }

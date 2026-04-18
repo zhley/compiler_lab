@@ -77,13 +77,13 @@ int type_equal(Type* a, Type* b){
         case ARRAY: return type_equal(a->array.elem, b->array.elem);
         case STRUCT: {
             FieldList* f_a = a->structure;
-            FieldList* f_b = a->structure;
+            FieldList* f_b = b->structure;
             while(f_a && f_b){
                 if(!type_equal(f_a->type, f_b->type)) return 0;
                 f_a = f_a->next;
                 f_b = f_b->next;
             }
-            if(!f_a || !f_b) return 0;
+            if(f_a || f_b) return 0;
             return 1;
         }
     }
