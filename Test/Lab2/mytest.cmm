@@ -1,0 +1,12 @@
+int a(int x){
+    return 0;
+}
+
+int f(int a, int b, int c){
+    return 0;
+}
+
+int main(){
+    int x = f(1, 1.5, 3, a(1.8));
+    return 0;
+}

@@ -466,16 +466,16 @@ static Type* handle_exp(TreeNode* node){
                     return NULL;
                 } else {
                     FuncParam* param_p = sym->func_info.params;
+                    int ok = 1;
                     for(TreeNode* arg_list = node->child[2]; arg_list; arg_list = arg_list->prod_id == 2 ? NULL : arg_list->child[2]){
                         TreeNode* exp = arg_list->child[0];
                         Type* exp_type = handle_exp(exp);
                         if(!param_p || !type_equal(exp_type, param_p->type)){
-                            print_error(9, node->line, func_name);
-                            return sym->func_info.ret_type;
+                            ok = 0;
                         }
-                        param_p = param_p->next;
+                        if(param_p) param_p = param_p->next;
                     }
-                    if(param_p){
+                    if(!ok || param_p){
                         print_error(9, node->line, func_name);
                         return sym->func_info.ret_type;
                     }
