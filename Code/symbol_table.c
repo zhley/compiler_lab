@@ -67,3 +67,24 @@ FieldList* find_field(Type* struct_type, const char* field_name){
     }
     return NULL;
 }
+
+// 结构等价
+int type_equal(Type* a, Type* b){
+    if(!a || !b) return 0;
+    if(a->kind != b->kind) return 0;
+    switch (a->kind) {
+        case BASIC: return a->basic == b->basic;
+        case ARRAY: return type_equal(a->array.elem, b->array.elem);
+        case STRUCT: {
+            FieldList* f_a = a->structure;
+            FieldList* f_b = a->structure;
+            while(f_a && f_b){
+                if(!type_equal(f_a->type, f_b->type)) return 0;
+                f_a = f_a->next;
+                f_b = f_b->next;
+            }
+            if(!f_a || !f_b) return 0;
+            return 1;
+        }
+    }
+}

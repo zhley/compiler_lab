@@ -22,6 +22,7 @@ void analyze_semantics(TreeNode* root){
         }
     }
 }
+
 // 未定义的错误将在程序中使用 Undefined Error 标注
 // Error info
 static void print_error(int type, int line, const char* attachment){
@@ -311,73 +312,106 @@ static int is_lvalue(TreeNode* node){
     return 0;
 }
 
-// TODO: 大量空指针没判定
+// NULL will be returned when there is an error in the expression, and the caller should not report additional errors based on the NULL type.
 static Type* handle_exp(TreeNode* node){
     switch (node->prod_id) {
         case 1: { // Exp : Exp ASSIGNOP Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(!is_lvalue(node->child[0])){
                 print_error(6, node->line, NULL);
+                return NULL;
             }
             if(!type_equal(left_type, right_type)){
                 print_error(5, node->line, NULL);
+                return NULL;
             }
             return left_type;
         }
         case 2: { // Exp : Exp AND Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(!IS_INT(left_type) || !IS_INT(right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return &INT;
         }
         case 3: { // Exp : Exp OR Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(!IS_INT(left_type) || !IS_INT(right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return &INT;
         }
         case 4: { // Exp : Exp RELOP Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(left_type->kind != BASIC || right_type->kind != BASIC || !type_equal(left_type, right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return &INT;
         }
         case 5: { // Exp : Exp PLUS Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(left_type->kind != BASIC || right_type->kind != BASIC || !type_equal(left_type, right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return left_type;
         }
         case 6: { // Exp : Exp MINUS Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(left_type->kind != BASIC || right_type->kind != BASIC || !type_equal(left_type, right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return left_type;
         }
         case 7: { // Exp : Exp STAR Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(left_type->kind != BASIC || right_type->kind != BASIC || !type_equal(left_type, right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return left_type;
         }
         case 8: { // Exp : Exp DIV Exp
             Type* left_type = handle_exp(node->child[0]);
             Type* right_type = handle_exp(node->child[2]);
+            if(!left_type || !right_type){
+                return NULL;
+            }
             if(left_type->kind != BASIC || right_type->kind != BASIC || !type_equal(left_type, right_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return left_type;
         }
@@ -386,15 +420,23 @@ static Type* handle_exp(TreeNode* node){
         }
         case 10: { // Exp : MINUS Exp
             Type* exp_type = handle_exp(node->child[1]);
+            if(!exp_type){
+                return NULL;
+            }
             if(exp_type->kind != BASIC){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return exp_type;
         }
         case 11: { // Exp : NOT Exp
             Type* exp_type = handle_exp(node->child[1]);
+            if(!exp_type){
+                return NULL;
+            }
             if(!IS_INT(exp_type)){
                 print_error(7, node->line, NULL);
+                return NULL;
             }
             return &INT;
         }
@@ -421,6 +463,7 @@ static Type* handle_exp(TreeNode* node){
                     }
                     if(param_p){
                         print_error(9, node->line, func_name);
+                        return sym->func_info.ret_type;
                     }
                     return sym->func_info.ret_type;
                 }
@@ -444,6 +487,9 @@ static Type* handle_exp(TreeNode* node){
         case 14: { // Exp : Exp LB Exp RB
             Type* array_type = handle_exp(node->child[0]);
             Type* index_type = handle_exp(node->child[2]);
+            if(!array_type || !index_type){
+                return NULL;
+            }
             if(array_type->kind != ARRAY){
                 print_error(10, node->line, NULL);
                 return NULL;
@@ -456,6 +502,9 @@ static Type* handle_exp(TreeNode* node){
         }
         case 15: { // Exp : Exp DOT ID
             Type* struct_type = handle_exp(node->child[0]);
+            if(!struct_type){
+                return NULL;
+            }
             if(struct_type->kind != STRUCT){
                 print_error(13, node->line, NULL);
                 return NULL;
