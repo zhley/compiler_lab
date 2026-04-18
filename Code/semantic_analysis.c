@@ -7,7 +7,7 @@
 
 static void handle_ext_def(TreeNode* node);
 static Type* handle_specifier(TreeNode* node);
-static void handle_var_dec(Type* type, TreeNode* node);
+static SymbolEntry* handle_var_dec(Type* type, TreeNode* node);
 static void handle_fun_dec(Type* ret_type, TreeNode* node);
 static void handle_comp_st(Type* ret_type, TreeNode* node);
 static void handle_def(TreeNode* node);
@@ -66,7 +66,7 @@ static void handle_ext_def(TreeNode* node){
     }
 }
 
-static void handle_var_dec(Type* type, TreeNode* node){
+static SymbolEntry* handle_var_dec(Type* type, TreeNode* node){
     if(node->prod_id == 1){ // VarDec -> ID       
         SymbolEntry* entry = (SymbolEntry*)malloc(sizeof(SymbolEntry));
         entry->name = node->child[0]->val.t_str;
@@ -75,7 +75,9 @@ static void handle_var_dec(Type* type, TreeNode* node){
         int ok = insert_symbol(entry);
         if(!ok){
             print_error(3, node->line, entry->name);
+            return NULL;
         }
+        return entry;
     } else if (node->prod_id == 2){ // VarDec -> VarDec LB INT RB
         TreeNode* p = node;
         Type* cur_type = type;
@@ -94,7 +96,9 @@ static void handle_var_dec(Type* type, TreeNode* node){
         int ok = insert_symbol(entry);
         if(!ok){
             print_error(3, node->line, entry->name);
+            return NULL;
         }
+        return entry;
     }
 }
 
@@ -123,11 +127,6 @@ static Type* handle_struct_specifier(TreeNode* node){
                     if(var_dec->prod_id == 1){ // VarDec -> ID
                         field->name = var_dec->child[0]->val.t_str;
                         field->type = field_t;
-                        if(find_field(type, field->name)){
-                            // redefined field
-                            print_error(15, var_dec->line, field->name);
-                            ok = 0;
-                        }
                     } else if(var_dec->prod_id == 2){ // VarDec -> VarDec LB INT RB
                         TreeNode* p = var_dec;
                         Type* cur_type = field_t;
@@ -141,6 +140,11 @@ static Type* handle_struct_specifier(TreeNode* node){
                         }
                         field->name = p->child[0]->val.t_str;
                         field->type = cur_type;
+                    }
+                    if(find_field(type, field->name)){
+                        // redefined field
+                        print_error(15, var_dec->line, field->name);
+                        ok = 0;
                     }
                     if(dec->prod_id == 2){
                         // initialized field
@@ -156,17 +160,17 @@ static Type* handle_struct_specifier(TreeNode* node){
                     }
                 }
             }
-            if(!ok){
-                return NULL;
-            }
             if(tag_name){
                 SymbolEntry* tag = (SymbolEntry*)malloc(sizeof(SymbolEntry));
                 tag->name = tag_name;
                 tag->kind = SYM_STRUCT_TAG;
-                tag->struct_type = type;
+                tag->struct_type = ok ? type : NULL;
                 if(!insert_symbol(tag)){
                     print_error(16, node->line, tag_name);
                 }
+            }
+            if(!ok){
+                return NULL;
             }
             return type;
         }
@@ -218,8 +222,9 @@ static void handle_fun_dec(Type* ret_type, TreeNode* node){
         for(TreeNode* varlist = node->child[2]; varlist; varlist = varlist->prod_id == 1 ? varlist->child[2] : NULL){
             TreeNode* param_dec = varlist->child[0];
             FuncParam* param = (FuncParam*)malloc(sizeof(FuncParam));
-            param->type = handle_specifier(param_dec->child[0]);
-            handle_var_dec(param->type, param_dec->child[1]);
+            Type* t = handle_specifier(param_dec->child[0]);
+            SymbolEntry* var = handle_var_dec(t, param_dec->child[1]);
+            param->type = var ? var->var_type : NULL;
             if(param_p){
                 param_p->next = param;
                 param_p = param;
