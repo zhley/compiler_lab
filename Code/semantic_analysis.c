@@ -110,10 +110,6 @@ static Type* handle_struct_specifier(TreeNode* node){
             Type* type = (Type*)malloc(sizeof(Type));
             type->kind = STRUCT;
             type->structure = NULL;
-            if(!node->child[3]){
-                // Undefined Error: 空结构体
-                return type;
-            }
             int ok = 1;
             FieldList* field_p = NULL;
             for(TreeNode* def_list = node->child[3]; def_list; def_list = def_list->child[1]){

@@ -1,0 +1,8 @@
+struct a {
+
+};
+
+int main(){
+    struct a f;
+    return f;
+}
