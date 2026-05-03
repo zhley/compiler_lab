@@ -23,6 +23,7 @@ typedef struct FieldList {
 
 typedef struct FuncParam {
     Type* type;
+    const char* name;
     struct FuncParam* next;
 } FuncParam;
 
@@ -50,6 +51,8 @@ SymbolEntry* find_symbol(const char* name);
 FieldList* find_field(Type* struct_type, const char* field_name);
 
 int type_equal(Type* a, Type* b);
+
+int get_size(Type* type);
 
 #define IS_INT(t) ((t) && (t)->kind == BASIC && (t)->basic == 1)
 #define IS_FLOAT(t) ((t) && (t)->kind == BASIC && (t)->basic == 0)

@@ -3,6 +3,6 @@
 
 #include "tree.h"
 
-void analyze_semantics(TreeNode* root);
+int analyze_semantics(TreeNode* root);
 
 #endif

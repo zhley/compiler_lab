@@ -51,7 +51,7 @@ WHILE       while
 {SEMI}              { yylval = create_node(SU_SEMI, 0); yylval->line = yylineno; return SEMI; }
 {COMMA}             { yylval = create_node(SU_COMMA, 0); yylval->line = yylineno; return COMMA; }
 {ASSIGNOP}          { yylval = create_node(SU_ASSIGNOP, 0); yylval->line = yylineno; return ASSIGNOP; }
-{RELOP}             { yylval = create_node(SU_RELOP, 0); yylval->line = yylineno; return RELOP; }
+{RELOP}             { yylval = create_node(SU_RELOP, 0); yylval->line = yylineno; yylval->val.t_relop = to_relop(yytext); return RELOP; }
 {PLUS}              { yylval = create_node(SU_PLUS, 0); yylval->line = yylineno; return PLUS; }
 {MINUS}             { yylval = create_node(SU_MINUS, 0); yylval->line = yylineno; return MINUS; }
 {STAR}              { yylval = create_node(SU_STAR, 0); yylval->line = yylineno; return STAR; }
@@ -75,4 +75,14 @@ char* str_save(const char* src){
     char* str = (char*)malloc(len);
     memcpy(str, src, len);
     return str;
+}
+
+Relop to_relop(const char* text){
+    if(strcmp(text, "==") == 0) return RELOP_EQ;
+    if(strcmp(text, "!=") == 0) return RELOP_NEQ;
+    if(strcmp(text, "<") == 0) return RELOP_LT;
+    if(strcmp(text, ">") == 0) return RELOP_GT;
+    if(strcmp(text, "<=") == 0) return RELOP_LE;
+    if(strcmp(text, ">=") == 0) return RELOP_GE;
+    return -1; // Invalid relop
 }

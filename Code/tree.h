@@ -53,12 +53,22 @@ typedef enum {
     SU_NUM_SYNTAX_UNITS
 } SyntaxUnit;
 
+typedef enum {
+    RELOP_EQ, // ==
+    RELOP_NEQ, // !=
+    RELOP_LT, // <
+    RELOP_GT, // >
+    RELOP_LE, // <=
+    RELOP_GE  // >=
+} Relop;
+
 typedef struct TreeNode{
     SyntaxUnit type;
     union val {
         int t_int;
         float t_float;
         char* t_str;
+        Relop t_relop;
     } val;
     unsigned int line;
     unsigned int prod_id; // production id

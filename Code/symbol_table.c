@@ -88,3 +88,18 @@ int type_equal(Type* a, Type* b){
         }
     }
 }
+
+int get_size(Type *type){
+    if(!type) return 0;
+    switch (type->kind) {
+        case BASIC: return 4;
+        case ARRAY: return type->array.size * get_size(type->array.elem);
+        case STRUCT: {
+            int size = 0;
+            for(FieldList* p = type->structure; p; p = p->next){
+                size += get_size(p->type);
+            }
+            return size;
+        }
+    }
+}

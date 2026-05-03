@@ -14,18 +14,22 @@ static void handle_def(TreeNode* node);
 static void handle_stmt(Type* ret_type, TreeNode* node);
 static Type* handle_exp(TreeNode* node);
 
-void analyze_semantics(TreeNode* root){
-    if(!root) return;
+static int ok = 1;
+
+int analyze_semantics(TreeNode* root){
+    if(!root) return ok;
     if(root->type == SU_Program){
         for(TreeNode* ext_def_list = root->child[0]; ext_def_list; ext_def_list = ext_def_list->child[1]){
             handle_ext_def(ext_def_list->child[0]);
         }
     }
+    return ok;
 }
 
 // 未定义的错误将在程序中使用 Undefined Error 标注
 // Error info
 static void print_error(int type, int line, const char* attachment){
+    ok = 0;
     switch (type) {
         case 1:  printf("Error type 1 at Line %d: Undefined variable \"%s\".\n", line, attachment); break;
         case 2:  printf("Error type 2 at Line %d: Undefined function \"%s\".\n", line, attachment); break;
@@ -100,6 +104,7 @@ static SymbolEntry* handle_var_dec(Type* type, TreeNode* node){
         }
         return entry;
     }
+    return NULL;
 }
 
 static Type* handle_struct_specifier(TreeNode* node){
@@ -221,6 +226,7 @@ static void handle_fun_dec(Type* ret_type, TreeNode* node){
             Type* t = handle_specifier(param_dec->child[0]);
             SymbolEntry* var = handle_var_dec(t, param_dec->child[1]);
             param->type = var ? var->var_type : NULL;
+            param->name = var ? var->name : NULL;
             if(param_p){
                 param_p->next = param;
                 param_p = param;
