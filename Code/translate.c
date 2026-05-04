@@ -32,7 +32,12 @@ static IRInst* translate_func(TreeNode* node){
     IRInst* ir = new_ir(IR_OP_FUNCTION, func_name->val.t_str, NULL, NULL, 0);
     SymbolEntry* sym = find_symbol(func_name->val.t_str);
     for(FuncParam* param = sym->func_info.params; param; param = param->next){
-        ir = link_ir(ir, new_ir(IR_OP_PARAM, NULL, param->name, NULL, 0));
+        if(param->type->kind == ARRAY){
+            ok = 0;
+            printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
+            return NULL;
+        }
+        ir = link_ir(ir, new_ir(IR_OP_PARAM, NULL, new_var(param->name), NULL, 0));
     }
     ir = link_ir(ir, translate_compst(node->child[2]));
     return ir;
@@ -42,14 +47,20 @@ static IRInst* translate_compst(TreeNode* node){
     IRInst* ir = NULL;
     TreeNode* comp_st = node;
     for(TreeNode* def_list = comp_st->child[1]; def_list; def_list = def_list->child[1]){
-        for(TreeNode* dec_list = def_list->child[1]; dec_list; dec_list = dec_list->prod_id == 1 ? NULL : dec_list->child[2]){
+        for(TreeNode* dec_list = def_list->child[0]->child[1]; dec_list; dec_list = dec_list->prod_id == 1 ? NULL : dec_list->child[2]){
             TreeNode* dec = dec_list->child[0];
             TreeNode* var_dec = dec->child[0];
             while(var_dec->prod_id == 2) var_dec = var_dec->child[0];
             const char* var_name = var_dec->child[0]->val.t_str;
             SymbolEntry* sym = find_symbol(var_name);
             if(sym->var_type->kind == ARRAY){
-                ir = link_ir(ir, new_ir(IR_OP_DEC, new_var(var_name), to_str(get_size(sym->var_type)), NULL, 0));
+                const char* t = new_temp();
+                ir = link_ir(ir, new_ir(IR_OP_DEC, t, to_str(get_size(sym->var_type)), NULL, 0));
+                ir = link_ir(ir, new_ir(IR_OP_ADDRESS, new_var(var_name), t, NULL, 0));
+            }else if(sym->var_type->kind == STRUCT){
+                const char* t = new_temp();
+                ir = link_ir(ir, new_ir(IR_OP_DEC, t, to_str(get_size(sym->var_type)), NULL, 0));
+                ir = link_ir(ir, new_ir(IR_OP_ADDRESS, new_var(var_name), t, NULL, 0));
             }
             if(dec->prod_id == 2){
                 const char* temp = new_temp();
@@ -195,12 +206,14 @@ static IRInst* translate_exp(TreeNode* node, const char* res){
                 ir = link_ir(ir, new_ir(IR_OP_WRITE, NULL, arg, NULL, 0));
                 return ir;
             }
+            IRInst* arg_ir = NULL;
             for(TreeNode* args = node->child[2]; args; args = args->prod_id == 2 ? NULL : args->child[2]){
                 const char* arg = new_temp();
-                IRInst* arg_ir = translate_exp(args->child[0], arg);
-                ir = link_ir(ir, arg_ir);
-                ir = link_ir(ir, new_ir(IR_OP_ARG, NULL, arg, NULL, 0));
+                IRInst* new_arg_ir = translate_exp(args->child[0], arg);
+                new_arg_ir = link_ir(new_arg_ir, new_ir(IR_OP_ARG, NULL, arg, NULL, 0));
+                arg_ir = link_ir(new_arg_ir, arg_ir);
             }
+            ir = link_ir(ir, arg_ir);
             ir = link_ir(ir, new_ir(IR_OP_CALL, res, func_name, NULL, 0));
             return ir;
         }
@@ -217,14 +230,22 @@ static IRInst* translate_exp(TreeNode* node, const char* res){
             const char* addr = new_temp();
             Type* type;
             IRInst* ir = translate_array_struct(node, addr, &type);
-            ir = link_ir(ir, new_ir(IR_OP_LOAD, res, addr, NULL, 0));
+            if(type->kind == BASIC){
+                ir = link_ir(ir, new_ir(IR_OP_LOAD, res, addr, NULL, 0));
+            } else{
+                ir = link_ir(ir, new_ir(IR_OP_ASSIGN, res, addr, NULL, 0));
+            }
             return ir;
         }
         case 15: { // Exp : Exp DOT ID
             const char* addr = new_temp();
             Type* type;
             IRInst* ir = translate_array_struct(node, addr, &type);
-            ir = link_ir(ir, new_ir(IR_OP_LOAD, res, addr, NULL, 0));
+            if(type->kind == BASIC){
+                ir = link_ir(ir, new_ir(IR_OP_LOAD, res, addr, NULL, 0));
+            } else{
+                ir = link_ir(ir, new_ir(IR_OP_ASSIGN, res, addr, NULL, 0));
+            }
             return ir;
         }
         case 16: { // Exp : ID
@@ -268,7 +289,6 @@ static IRInst* translate_cond(TreeNode* node, const char* label_true, const char
             ir = link_ir(ir, translate_exp(node->child[2], temp2));
             ir = link_ir(ir, new_ir(IR_OP_IF_GOTO, label_true, temp1, temp2, node->child[1]->val.t_relop));
             ir = link_ir(ir, new_ir(IR_OP_GOTO, label_false, NULL, NULL, 0));
-            ir = link_ir(ir, new_ir(IR_OP_LABEL, label_true, NULL, NULL, 0));
             return ir;
         }
         case 11: { // Exp : NOT Exp
@@ -279,7 +299,6 @@ static IRInst* translate_cond(TreeNode* node, const char* label_true, const char
             IRInst* ir = translate_exp(node, temp);
             ir = link_ir(ir, new_ir(IR_OP_IF_GOTO, label_true, temp, new_imm(0), RELOP_NEQ));
             ir = link_ir(ir, new_ir(IR_OP_GOTO, label_false, NULL, NULL, 0));
-            ir = link_ir(ir, new_ir(IR_OP_LABEL, label_true, NULL, NULL, 0));
             return ir;
         }
     }
@@ -291,7 +310,7 @@ static IRInst* translate_array_struct(TreeNode* node, const char* addr, Type** t
             const char* var_name = node->child[0]->val.t_str;
             SymbolEntry* sym = find_symbol(var_name);
             *type = sym->var_type;
-            return new_ir(IR_OP_ADDRESS, addr, new_var(var_name), NULL, 0);
+            return new_ir(IR_OP_ASSIGN, addr, new_var(var_name), NULL, 0);
         }
         case 14: { // Exp : Exp LB Exp RB
             Type* array_type;

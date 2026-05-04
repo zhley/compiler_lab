@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Code/parser",
-            "args": ["${workspaceFolder}/Test/Lab3/1.cmm", "${workspaceFolder}/Test/Lab3/1.ir"],
+            "args": ["${workspaceFolder}/Test/Lab3/A-3.cmm", "${workspaceFolder}/Test/Lab3/A-3.ir"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

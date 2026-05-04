@@ -48,13 +48,15 @@ int main(int argc, char* argv[]){
 
         if(analyze_semantics(root)) {
             IRInst* ir = translate(root);
-            FILE* output_file = fopen(argv[2], "w");
-            if (!output_file) {
-                perror(argv[2]);
-                return 1;
+            if(ir){
+                FILE* output_file = fopen(argv[2], "w");
+                if (!output_file) {
+                    perror(argv[2]);
+                    return 1;
+                }
+                print_ir(ir, output_file);
+                fclose(output_file);
             }
-            print_ir(ir, output_file);
-            fclose(output_file);
         }
     }
     fclose(file);

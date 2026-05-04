@@ -1,0 +1,246 @@
+FUNCTION distance :
+PARAM vcar1
+PARAM vcar2
+t0 := #0
+vdis_x := t0
+t1 := #0
+vdis_y := t1
+t4 := vcar1
+t4 := t4 + #0
+t2 := *t4
+t5 := vcar2
+t5 := t5 + #0
+t3 := *t5
+IF t2 > t3 GOTO label0
+GOTO label1
+LABEL label0 :
+t9 := vcar1
+t9 := t9 + #0
+t7 := *t9
+t10 := vcar2
+t10 := t10 + #0
+t8 := *t10
+t6 := t7 - t8
+vdis_x := t6
+GOTO label2
+LABEL label1 :
+t14 := vcar2
+t14 := t14 + #0
+t12 := *t14
+t15 := vcar1
+t15 := t15 + #0
+t13 := *t15
+t11 := t12 - t13
+vdis_x := t11
+LABEL label2 :
+t18 := vcar1
+t18 := t18 + #4
+t16 := *t18
+t19 := vcar2
+t19 := t19 + #4
+t17 := *t19
+IF t16 > t17 GOTO label3
+GOTO label4
+LABEL label3 :
+t23 := vcar1
+t23 := t23 + #4
+t21 := *t23
+t24 := vcar2
+t24 := t24 + #4
+t22 := *t24
+t20 := t21 - t22
+vdis_y := t20
+GOTO label5
+LABEL label4 :
+t28 := vcar2
+t28 := t28 + #4
+t26 := *t28
+t29 := vcar1
+t29 := t29 + #4
+t27 := *t29
+t25 := t26 - t27
+vdis_y := t25
+LABEL label5 :
+t31 := vdis_x
+t32 := vdis_y
+t30 := t31 + t32
+RETURN t30
+FUNCTION sum_distance :
+PARAM vstreet2
+t33 := #0
+vsum := t33
+t35 := vsum
+t42 := vstreet2
+t42 := t42 + #8
+t43 := #1
+t44 := t43 * #12
+t42 := t42 + t44
+t41 := *t42
+ARG t41
+t38 := vstreet2
+t38 := t38 + #8
+t39 := #0
+t40 := t39 * #12
+t38 := t38 + t40
+t37 := *t38
+ARG t37
+t36 := CALL distance
+t34 := t35 + t36
+vsum := t34
+t46 := vsum
+t53 := vstreet2
+t53 := t53 + #8
+t54 := #2
+t55 := t54 * #12
+t53 := t53 + t55
+t52 := *t53
+ARG t52
+t49 := vstreet2
+t49 := t49 + #8
+t50 := #1
+t51 := t50 * #12
+t49 := t49 + t51
+t48 := *t49
+ARG t48
+t47 := CALL distance
+t45 := t46 + t47
+vsum := t45
+t57 := vsum
+t64 := vstreet2
+t64 := t64 + #8
+t65 := #0
+t66 := t65 * #12
+t64 := t64 + t66
+t63 := *t64
+ARG t63
+t60 := vstreet2
+t60 := t60 + #8
+t61 := #2
+t62 := t61 * #12
+t60 := t60 + t62
+t59 := *t60
+ARG t59
+t58 := CALL distance
+t56 := t57 + t58
+vsum := t56
+t67 := vsum
+RETURN t67
+FUNCTION ave_speed :
+PARAM vcar3
+PARAM vcar4
+PARAM vcar5
+t75 := vcar3
+t75 := t75 + #8
+t73 := *t75
+t76 := vcar4
+t76 := t76 + #8
+t74 := *t76
+t71 := t73 + t74
+t77 := vcar5
+t77 := t77 + #8
+t72 := *t77
+t69 := t71 + t72
+t70 := #3
+t68 := t69 / t70
+RETURN t68
+FUNCTION initStreet :
+PARAM vstreet1
+t78 := #0
+vindex := t78
+t80 := vstreet1
+t80 := t80 + #0
+t79 := #0
+*t80 := t79
+t82 := vstreet1
+t82 := t82 + #4
+t81 := #0
+*t82 := t81
+LABEL label6 :
+t83 := vindex
+t84 := #3
+IF t83 < t84 GOTO label7
+GOTO label8
+LABEL label7 :
+t86 := vstreet1
+t86 := t86 + #8
+t87 := vindex
+t88 := t87 * #12
+t86 := t86 + t88
+t86 := t86 + #0
+t91 := #30
+t92 := vindex
+t89 := t91 * t92
+t90 := #10
+t85 := t89 + t90
+*t86 := t85
+t94 := vstreet1
+t94 := t94 + #8
+t95 := vindex
+t96 := t95 * #12
+t94 := t94 + t96
+t94 := t94 + #4
+t99 := #20
+t101 := vindex
+t102 := #1
+t100 := t101 + t102
+t97 := t99 * t100
+t98 := #15
+t93 := t97 - t98
+*t94 := t93
+t104 := vstreet1
+t104 := t104 + #8
+t105 := vindex
+t106 := t105 * #12
+t104 := t104 + t106
+t104 := t104 + #8
+t111 := vindex
+t112 := #1
+t109 := t111 + t112
+t110 := #100
+t107 := t109 * t110
+t108 := #50
+t103 := t107 - t108
+*t104 := t103
+t114 := vindex
+t115 := #1
+t113 := t114 + t115
+vindex := t113
+GOTO label6
+LABEL label8 :
+t116 := #0
+RETURN t116
+FUNCTION main :
+DEC t117 44
+vmyStreet := &t117
+t119 := vmyStreet
+ARG t119
+t118 := CALL initStreet
+t122 := vmyStreet
+ARG t122
+t121 := CALL sum_distance
+WRITE t121
+t134 := vmyStreet
+t134 := t134 + #8
+t135 := #2
+t136 := t135 * #12
+t134 := t134 + t136
+t133 := *t134
+ARG t133
+t130 := vmyStreet
+t130 := t130 + #8
+t131 := #1
+t132 := t131 * #12
+t130 := t130 + t132
+t129 := *t130
+ARG t129
+t126 := vmyStreet
+t126 := t126 + #8
+t127 := #0
+t128 := t127 * #12
+t126 := t126 + t128
+t125 := *t126
+ARG t125
+t124 := CALL ave_speed
+WRITE t124
+t137 := #0
+RETURN t137
