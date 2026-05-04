@@ -54,6 +54,7 @@ typedef enum {
 } SyntaxUnit;
 
 typedef enum {
+    RELOP_UNDEFINED = 0,
     RELOP_EQ, // ==
     RELOP_NEQ, // !=
     RELOP_LT, // <

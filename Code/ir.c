@@ -1,6 +1,7 @@
 #include "ir.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 IRInst* link_ir(IRInst* head, IRInst* tail){
     if(!head) return tail;
@@ -33,6 +34,12 @@ const char* new_label(){
     char* label_name = (char*)malloc(20);
     sprintf(label_name, "label%d", label_count++);
     return label_name;
+}
+
+const char* new_var(const char* var_name){
+    char* new_name = (char*)malloc(strlen(var_name) + 2);
+    sprintf(new_name, "v%s", var_name);
+    return new_name;
 }
 
 const char* to_str(int num){
@@ -98,6 +105,7 @@ void print_ir(IRInst* ir, FILE* output){
                     case RELOP_LE:  fprintf(output, "IF %s <= %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
                     case RELOP_GT:  fprintf(output, "IF %s > %s GOTO %s\n",  p->arg1, p->arg2, p->result); break;
                     case RELOP_GE:  fprintf(output, "IF %s >= %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
+                    default: break;
                 }
                 break;
             case IR_OP_RETURN:

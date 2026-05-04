@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "ir.h"
 #include "symbol_table.h"
@@ -29,6 +30,22 @@ int main(int argc, char* argv[]){
     yyrestart(file);
     yyparse();
     if(ok) {
+        // function read and write
+        SymbolEntry* read_func = (SymbolEntry*)malloc(sizeof(SymbolEntry));
+        read_func->name = "read";
+        read_func->kind = SYM_FUNC;
+        read_func->func_info.ret_type = &INT;
+        read_func->func_info.params = NULL;
+        insert_symbol(read_func);
+        SymbolEntry* write_func = (SymbolEntry*)malloc(sizeof(SymbolEntry));
+        write_func->name = "write";
+        write_func->kind = SYM_FUNC;
+        write_func->func_info.ret_type = NULL;
+        FuncParam* write_param = (FuncParam*)malloc(sizeof(FuncParam)); 
+        write_param->type = &INT;
+        write_func->func_info.params = write_param;
+        insert_symbol(write_func);
+
         if(analyze_semantics(root)) {
             IRInst* ir = translate(root);
             FILE* output_file = fopen(argv[2], "w");

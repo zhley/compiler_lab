@@ -4,7 +4,7 @@
         {
             "label": "Build with Make",
             "type": "shell",
-            "command": "cd Code && make",
+            "command": "cd Code && make clean && make CFLAGS=\"-std=c99 -g\"",
             "args": [],
             "group": {
                 "kind": "build",

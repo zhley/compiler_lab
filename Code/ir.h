@@ -40,6 +40,7 @@ IRInst* new_ir(IROp opcode, const char* result, const char* arg1, const char* ar
 
 const char* new_temp();
 const char* new_label();
+const char* new_var(const char* var_name);
 
 const char* to_str(int num);
 const char* new_imm(int value);

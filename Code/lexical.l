@@ -7,6 +7,7 @@
     extern int ok;
 
     char* str_save(const char* src);  
+    Relop to_relop(const char* text);
 %}
 
 BLANK       [ \t\n\r]+
@@ -84,5 +85,5 @@ Relop to_relop(const char* text){
     if(strcmp(text, ">") == 0) return RELOP_GT;
     if(strcmp(text, "<=") == 0) return RELOP_LE;
     if(strcmp(text, ">=") == 0) return RELOP_GE;
-    return -1; // Invalid relop
+    return RELOP_UNDEFINED; 
 }
