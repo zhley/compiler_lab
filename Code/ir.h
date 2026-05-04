@@ -2,6 +2,8 @@
 #define __IR_H__
 
 #include "tree.h"
+#include <stdio.h>
+
 typedef enum IROp {
     IR_OP_LABEL,
     IR_OP_FUNCTION,
@@ -42,5 +44,7 @@ const char* new_label();
 const char* to_str(int num);
 const char* new_imm(int value);
 const char* new_imm_f(float value);
+
+void print_ir(IRInst* ir, FILE* output);
 
 #endif

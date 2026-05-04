@@ -30,7 +30,7 @@ static IRInst* translate_func(TreeNode* node){
     IRInst* ir = new_ir(IR_OP_FUNCTION, func_name->val.t_str, NULL, NULL, NULL);
     SymbolEntry* sym = find_symbol(func_name->val.t_str);
     for(FuncParam* param = sym->func_info.params; param; param = param->next){
-        ir = link_ir(ir, new_ir(IR_OP_PARAM, param->name, NULL, NULL, NULL));
+        ir = link_ir(ir, new_ir(IR_OP_PARAM, NULL, param->name, NULL, NULL));
     }
     ir = link_ir(ir, translate_stmt(node->child[2]));
     return ir;

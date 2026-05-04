@@ -52,3 +52,76 @@ const char* new_imm_f(float value){
     sprintf(str, "#%f", value);
     return str;
 }
+
+void print_ir(IRInst* ir, FILE* output){
+    IRInst* p = ir;
+    while(p){
+        switch(p->opcode){
+            case IR_OP_LABEL:
+                fprintf(output, "LABEL %s :\n", p->result);
+                break;
+            case IR_OP_FUNCTION:
+                fprintf(output, "FUNCTION %s :\n", p->result);
+                break;
+            case IR_OP_ASSIGN:
+                fprintf(output, "%s := %s\n", p->result, p->arg1);
+                break;
+            case IR_OP_ADD:
+                fprintf(output, "%s := %s + %s\n", p->result, p->arg1, p->arg2);
+                break;
+            case IR_OP_SUB:
+                fprintf(output, "%s := %s - %s\n", p->result, p->arg1, p->arg2);
+                break;
+            case IR_OP_MUL:
+                fprintf(output, "%s := %s * %s\n", p->result, p->arg1, p->arg2);
+                break;
+            case IR_OP_DIV:
+                fprintf(output, "%s := %s / %s\n", p->result, p->arg1, p->arg2);
+                break;
+            case IR_OP_ADDRESS:
+                fprintf(output, "%s := &%s\n", p->result, p->arg1);
+                break;
+            case IR_OP_LOAD:
+                fprintf(output, "%s := *%s\n", p->result, p->arg1);
+                break;
+            case IR_OP_STORE:
+                fprintf(output, "*%s := %s\n", p->result, p->arg1);
+                break;
+            case IR_OP_GOTO:
+                fprintf(output, "GOTO %s\n", p->result);
+                break;
+            case IR_OP_IF_GOTO:
+                switch(p->relop){
+                    case RELOP_EQ:  fprintf(output, "IF %s == %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
+                    case RELOP_NEQ: fprintf(output, "IF %s != %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
+                    case RELOP_LT:  fprintf(output, "IF %s < %s GOTO %s\n",  p->arg1, p->arg2, p->result); break;
+                    case RELOP_LE:  fprintf(output, "IF %s <= %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
+                    case RELOP_GT:  fprintf(output, "IF %s > %s GOTO %s\n",  p->arg1, p->arg2, p->result); break;
+                    case RELOP_GE:  fprintf(output, "IF %s >= %s GOTO %s\n", p->arg1, p->arg2, p->result); break;
+                }
+                break;
+            case IR_OP_RETURN:
+                fprintf(output, "RETURN %s\n", p->result);
+                break;
+            case IR_OP_DEC:
+                fprintf(output, "DEC %s %s\n", p->result, p->arg1);
+                break;
+            case IR_OP_ARG:
+                fprintf(output, "ARG %s\n", p->arg1);
+                break;
+            case IR_OP_CALL:
+                fprintf(output, "%s := CALL %s\n", p->result, p->arg1);
+                break;
+            case IR_OP_PARAM:
+                fprintf(output, "PARAM %s\n", p->arg1);
+                break;
+            case IR_OP_READ:
+                fprintf(output, "READ %s\n", p->result);
+                break;
+            case IR_OP_WRITE:
+                fprintf(output, "WRITE %s\n", p->arg1);
+                break;
+        }
+        p = p->next;
+    }
+}
