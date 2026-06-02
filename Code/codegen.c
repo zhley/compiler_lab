@@ -9,6 +9,10 @@
 #define MAX_IR 10000
 #define REG_NUM 19
 
+#define OFFSET(slot) (-12 - (slot) * 4)
+
+static const char* begin_asm = ".data\n_prompt: .asciiz \"Enter an integer:\"\n_ret: .asciiz \"\\n\"\n.globl main\n.text\nread:\nli $v0, 4\nla $a0, _prompt\nsyscall\nli $v0, 5\nsyscall\njr $ra\nwrite:\nli $v0, 1\nsyscall\nli $v0, 4\nla $a0, _ret\nsyscall\nmove $v0, $0\njr $ra\n";
+
 typedef struct IREntry {
     IROp opcode;
     const char* result;
@@ -30,7 +34,7 @@ typedef struct RegDesc {
 } RegDesc;
 
 typedef struct VarDesc {
-    int reg_idx;
+    int reg_idx; // 变量所在寄存器, 寄存器free时不会清除该项, 只有在被其他变量占用时才会置-1.
     int slot; // 局部变量槽, 本质就是第几个局部变量
 } VarDesc;
 
@@ -69,6 +73,8 @@ int get_var_idx(const char* var_name){
     }
     var_map[var_map_size].var_name = var_name;
     var_map[var_map_size].idx = var_map_size;
+    vars[var_map_size].reg_idx = -1;
+    vars[var_map_size].slot = -1;
     return var_map_size++;
 }
 
@@ -109,10 +115,6 @@ void init_allocation(){
         regs[i].dirty = 0;
         regs[i].next_use = -1;
     }
-    for(int i = 0; i < var_map_size; i++){
-        vars[i].reg_idx = -1;
-        vars[i].slot = -1; // -1表示未分配局部变量槽
-    }
 }
 
 int allocate(const char* var_name){
@@ -122,6 +124,9 @@ int allocate(const char* var_name){
     }
     for(int i = 0; i < REG_NUM; i++){
         if(regs[i].is_free){
+            if(regs[i].var_idx != -1){
+                vars[regs[i].var_idx].reg_idx = -1;
+            }
             regs[i].is_free = 0;
             regs[i].var_idx = var_idx;
             return i;
@@ -141,8 +146,7 @@ int allocate(const char* var_name){
             vars[var_idx].slot = make_local_slot(); // 分配局部变量槽
         }
         vars[var_idx].reg_idx = -1;
-        // TODO: 栈结构待定
-        fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(victim), vars[var_idx].slot * 4);
+        fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(victim), OFFSET(vars[var_idx].slot));
     }
     regs[victim].var_idx = var_idx;
     regs[victim].is_free = 0;
@@ -163,8 +167,7 @@ int ensure(const char* var_name){
     if(vars[var_idx].slot == -1){
         vars[var_idx].slot = make_local_slot();
     }
-    // TODO: 栈结构待定
-    fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(reg_idx), vars[var_idx].slot * 4);
+    fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(reg_idx), OFFSET(vars[var_idx].slot));
     return reg_idx;
 }
 
@@ -188,8 +191,7 @@ void free_if_unused(int cur_ir_idx, int block_end, const char* var_name){
             if(vars[var_idx].slot == -1){
                 vars[var_idx].slot = make_local_slot();
             }
-            // TODO: 栈结构待定
-            fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(reg_idx), vars[var_idx].slot * 4);
+            fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(reg_idx), OFFSET(vars[var_idx].slot));
         }
         regs[reg_idx].is_free = 1;
         regs[reg_idx].var_idx = -1;
@@ -199,12 +201,36 @@ void free_if_unused(int cur_ir_idx, int block_end, const char* var_name){
     }
 }
 
+/*
+
+high
++-----------------------+
+| caller frame          |
++-----------------------+
+| ...                   |
+| arg6                  |
+| arg5                  |
++-----------------------+ <- $fp
+| saved $ra             |
++-----------------------+
+| old $fp               |
++-----------------------+
+| slot 0                | ($fp - 12)
+| slot 1                |
+| ...                   |
++-----------------------+
+| dynamic (args)        |
++-----------------------+ <- $sp
+low
+*/
+
 void transform_ir(IRInst* ir);
 void gencode_func(int begin, int end);
 void gencode_block(int begin, int end);
 
 void generate_code(IRInst* ir, FILE* output) {
     output_file = output;
+    fprintf(output_file, "%s\n", begin_asm);
     transform_ir(ir);
     for(int i = 0; i < ir_count;){
         if(ir_table[i].opcode == IR_OP_FUNCTION){
@@ -256,7 +282,27 @@ void gencode_func(int begin, int end) {
     assert(ir_table[start].opcode == IR_OP_FUNCTION);
     func_name = ir_table[start].result;
     if(strcmp(func_name, "main") == 0) fprintf(output_file, "main:\n");
-    else fprintf(output_file, "func_%s:\n", func_name);
+    else fprintf(output_file, "f_%s:\n", func_name);
+    fprintf(output_file, "addi $sp, $sp, -8\n");
+    fprintf(output_file, "sw $ra, 4($sp)\n");
+    fprintf(output_file, "sw $fp, 0($sp)\n");
+    fprintf(output_file, "addi $fp, $sp, 8\n");
+    long int pos = ftell(output_file);
+    fprintf(output_file, "addi $sp, $sp,                     \n"); // 预留空间, 稍后回填
+    int cnt = 0;
+    while(start < end && ir_table[start].opcode == IR_OP_PARAM){
+        cnt++;
+        int var_idx = get_var_idx(ir_table[start].arg1);
+        assert(vars[var_idx].slot == -1);
+        vars[var_idx].slot = make_local_slot();
+        if(cnt <= 4){
+            fprintf(output_file, "sw $a%d, %d($fp)\n", cnt - 1, OFFSET(vars[var_idx].slot));
+        } else{
+            fprintf(output_file, "lw $t0, %d($fp)\n", (cnt - 5) * 4);
+            fprintf(output_file, "sw $t0, %d($fp)\n", OFFSET(vars[var_idx].slot));
+        }
+        start++;
+    }
 
     int l = start;
     int r = -1;
@@ -280,6 +326,18 @@ void gencode_func(int begin, int end) {
             l = r;
         }
     }
+    if(l < end) gencode_block(l, end);
+    fprintf(output_file, "ret_%s:\n", func_name);
+    fprintf(output_file, "lw $ra, -4($fp)\n");
+    fprintf(output_file, "lw $fp, -8($fp)\n");
+    int frame_size = (local_var_cnt + 2) * 4;
+    fprintf(output_file, "addi $sp, $sp, %d\n", frame_size);
+    fprintf(output_file, "jr $ra\n");
+
+    // 回填
+    fseek(output_file, pos + 15, SEEK_SET);
+    fprintf(output_file, "%d", -(frame_size - 8));
+    fseek(output_file, 0, SEEK_END);
 }
 
 void spill_all(){
@@ -289,14 +347,68 @@ void spill_all(){
             if(vars[var_idx].slot == -1){
                 vars[var_idx].slot = make_local_slot();
             }
-            // TODO: 栈结构待定
-            fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(i), vars[var_idx].slot * 4);
+            fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(i), OFFSET(vars[var_idx].slot));
         }
     }
 }
 
 void gencode_block(int begin, int end) {
     if(begin >= end) return;
+    if(ir_table[end - 1].opcode == IR_OP_CALL){
+        int cnt = end - 1 - begin;
+        if(cnt <= 4){
+            for(int i = cnt - 1; i >= 0; i--){
+                assert(ir_table[begin + i].opcode == IR_OP_ARG);
+                int var_idx = get_var_idx(ir_table[begin + i].arg1);
+                if(vars[var_idx].reg_idx != -1){
+                    int reg_idx = vars[var_idx].reg_idx;
+                    fprintf(output_file, "move $a%d, %s\n", cnt - 1 - i, get_reg_name(reg_idx));
+                } else{
+                    assert(vars[var_idx].slot != -1);
+                    fprintf(output_file, "lw $a%d, %d($fp)\n", cnt - 1 - i, OFFSET(vars[var_idx].slot));
+                }
+            }
+            fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
+        } else{
+            for(int i = 3; i >= 0; i--){
+                assert(ir_table[begin + i].opcode == IR_OP_ARG);
+                int var_idx = get_var_idx(ir_table[begin + i].arg1);
+                if(vars[var_idx].reg_idx != -1){
+                    int reg_idx = vars[var_idx].reg_idx;
+                    fprintf(output_file, "move $a%d, %s\n", 3 - i, get_reg_name(reg_idx));
+                } else{
+                    assert(vars[var_idx].slot != -1);
+                    fprintf(output_file, "lw $a%d, %d($fp)\n", 3 - i, OFFSET(vars[var_idx].slot));
+                }
+            }
+            fprintf(output_file, "addi $sp, $sp, -%d\n", (cnt - 4) * 4);
+            for(int i = 4; i < cnt; i++){
+                assert(ir_table[begin + i].opcode == IR_OP_ARG);
+                int var_idx = get_var_idx(ir_table[begin + i].arg1);
+                if(vars[var_idx].reg_idx != -1){
+                    int reg_idx = vars[var_idx].reg_idx;
+                    fprintf(output_file, "sw %s, %d($sp)\n", get_reg_name(reg_idx), -(cnt - i) * 4);
+                } else{
+                    assert(vars[var_idx].slot != -1);
+                    if(regs[0].var_idx != -1) {
+                        vars[regs[0].var_idx].reg_idx = -1;
+                        regs[0].var_idx = -1;
+                    }
+                    fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(0), OFFSET(vars[var_idx].slot));
+                    fprintf(output_file, "sw %s, %d($sp)\n", get_reg_name(0), -(cnt - i) * 4);
+                }
+            }
+            fprintf(output_file, "addi $sp, $sp, %d\n", (cnt - 4) * 4);
+            fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
+        }
+        int ret = get_var_idx(ir_table[end - 1].result);
+        if(vars[ret].slot == -1){
+            vars[ret].slot = make_local_slot();
+        }
+        fprintf(output_file, "sw $v0, %d($fp)\n", OFFSET(vars[ret].slot));
+        return;
+    }
+    init_allocation();
     for(int i = begin; i < end; i++) {
         IREntry* entry = &ir_table[i];
         switch(entry->opcode){
@@ -492,8 +604,7 @@ void gencode_block(int begin, int end) {
                 int size = atoi(entry->arg1);
                 local_var_cnt += size / 4;
                 int slot = local_var_cnt - 1;
-                // 栈结构待定
-                fprintf(output_file, "addi %s, $fp, -%d\n", get_reg_name(dst), slot * 4);
+                fprintf(output_file, "addi %s, $fp, %d\n", get_reg_name(dst), OFFSET(slot));
                 free_if_unused(i, end, entry->result);
                 break;
             }
@@ -511,9 +622,16 @@ void gencode_block(int begin, int end) {
                 int var2 = get_var_idx(entry->arg2);
                 if(vars[var1].slot == -1) vars[var1].slot = make_local_slot();
                 if(vars[var2].slot == -1) vars[var2].slot = make_local_slot();
-                // TODO: 栈结构待定
-                fprintf(output_file, "lw $t0, %d($fp)\n", vars[var1].slot * 4);
-                fprintf(output_file, "lw $t1, %d($fp)\n", vars[var2].slot * 4);
+                if(regs[0].var_idx != -1) {
+                    vars[regs[0].var_idx].reg_idx = -1;
+                    regs[0].var_idx = -1;
+                }
+                if(regs[1].var_idx != -1) {
+                    vars[regs[1].var_idx].reg_idx = -1;
+                    regs[1].var_idx = -1;
+                }
+                fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(0), OFFSET(vars[var1].slot));
+                fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(1), OFFSET(vars[var2].slot));
                 const char* op;
                 switch (entry->relop) {
                     case RELOP_EQ: op = "beq"; break;
@@ -524,7 +642,7 @@ void gencode_block(int begin, int end) {
                     case RELOP_GE: op = "bge"; break;
                     default: assert(0); return;
                 }
-                fprintf(output_file, "%s $t0, $t1, %s\n", op, entry->result);
+                fprintf(output_file, "%s %s, %s, %s\n", op, get_reg_name(0), get_reg_name(1), entry->result);
                 return;
             }
             case IR_OP_RETURN: {
@@ -533,12 +651,27 @@ void gencode_block(int begin, int end) {
                 if(entry->result){
                     int val_var = get_var_idx(entry->result);
                     if(vars[val_var].slot == -1) vars[val_var].slot = make_local_slot();
-                    // TODO: 栈结构待定
-                    fprintf(output_file, "lw $v0, %d($fp)\n", vars[val_var].slot * 4);
+                    fprintf(output_file, "lw $v0, %d($fp)\n", OFFSET(vars[val_var].slot));
                 }
                 fprintf(output_file, "j ret_%s\n", func_name);
                 return;
             }
+            case IR_OP_READ: {
+                int dst = allocate(entry->result);
+                fprintf(output_file, "jal read\n");
+                fprintf(output_file, "move %s, $v0\n", get_reg_name(dst));
+                regs[dst].dirty = 0;
+                free_if_unused(i, end, entry->result);
+                break;
+            }
+            case IR_OP_WRITE: {
+                int src = ensure(entry->arg1);
+                fprintf(output_file, "move $a0, %s\n", get_reg_name(src));
+                fprintf(output_file, "jal write\n");
+                free_if_unused(i, end, entry->arg1);
+                break;
+            }
+            default: assert(0); break;
         }
     }
     spill_all();

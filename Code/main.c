@@ -6,6 +6,7 @@
 #include "tree.h"
 #include "semantic_analysis.h"
 #include "translate.h"
+#include "codegen.h"
 
 // Flex
 void yyrestart(FILE*);
@@ -54,7 +55,7 @@ int main(int argc, char* argv[]){
                     perror(argv[2]);
                     return 1;
                 }
-                print_ir(ir, output_file);
+                generate_code(ir, output_file);
                 fclose(output_file);
             }
         }
