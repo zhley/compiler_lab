@@ -207,13 +207,18 @@ static IRInst* translate_exp(TreeNode* node, const char* res){
                 return ir;
             }
             IRInst* arg_ir = NULL;
+            const char* arg_vars_buf[1000];
+            int arg_cnt = 0;
             for(TreeNode* args = node->child[2]; args; args = args->prod_id == 2 ? NULL : args->child[2]){
                 const char* arg = new_temp();
                 IRInst* new_arg_ir = translate_exp(args->child[0], arg);
-                new_arg_ir = link_ir(new_arg_ir, new_ir(IR_OP_ARG, NULL, arg, NULL, 0));
                 arg_ir = link_ir(new_arg_ir, arg_ir);
+                arg_vars_buf[arg_cnt++] = arg;
             }
             ir = link_ir(ir, arg_ir);
+            for(int i = arg_cnt - 1; i >= 0; i--){
+                ir = link_ir(ir, new_ir(IR_OP_ARG, NULL, arg_vars_buf[i], NULL, 0));
+            }
             ir = link_ir(ir, new_ir(IR_OP_CALL, res, func_name, NULL, 0));
             return ir;
         }
