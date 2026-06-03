@@ -328,6 +328,11 @@ void gencode_func(int begin, int end) {
             r = i + 1;
             gencode_block(l, r);
             l = r;
+        }else if(ir_table[i].opcode == IR_OP_CALL){
+            r = i;
+            gencode_block(l, r);
+            gencode_block(r, r + 1);
+            l = r + 1;
         }
     }
     if(l < end) gencode_block(l, end);
@@ -372,7 +377,8 @@ void gencode_block(int begin, int end) {
                     fprintf(output_file, "lw $a%d, %d($fp)\n", cnt - 1 - i, OFFSET(vars[var_idx].slot));
                 }
             }
-            fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
+            if(strcmp(ir_table[end - 1].arg1, "main") == 0) fprintf(output_file, "jal main\n");
+            else fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
         } else{
             for(int i = 3; i >= 0; i--){
                 assert(ir_table[begin + i].opcode == IR_OP_ARG);
@@ -402,7 +408,8 @@ void gencode_block(int begin, int end) {
                     fprintf(output_file, "sw %s, %d($sp)\n", get_reg_name(0), (i - 4) * 4);
                 }
             }
-            fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
+            if(strcmp(ir_table[end - 1].arg1, "main") == 0) fprintf(output_file, "jal main\n");
+            else fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
             fprintf(output_file, "addi $sp, $sp, %d\n", (cnt - 4) * 4);
         }
         int ret = get_var_idx(ir_table[end - 1].result);
@@ -603,10 +610,6 @@ void gencode_block(int begin, int end) {
             case IR_OP_IF_GOTO: {
                 assert(i == end - 1);
                 spill_all();
-                int var1 = get_var_idx(entry->arg1);
-                int var2 = get_var_idx(entry->arg2);
-                if(vars[var1].slot == -1) vars[var1].slot = make_local_slot();
-                if(vars[var2].slot == -1) vars[var2].slot = make_local_slot();
                 if(regs[0].var_idx != -1) {
                     vars[regs[0].var_idx].reg_idx = -1;
                     regs[0].var_idx = -1;
@@ -615,8 +618,17 @@ void gencode_block(int begin, int end) {
                     vars[regs[1].var_idx].reg_idx = -1;
                     regs[1].var_idx = -1;
                 }
+                int var1 = get_var_idx(entry->arg1);
+                if(vars[var1].slot == -1) vars[var1].slot = make_local_slot();
                 fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(0), OFFSET(vars[var1].slot));
-                fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(1), OFFSET(vars[var2].slot));
+                if(is_imm(entry->arg2)){
+                    int val = get_imm(entry->arg2);
+                    fprintf(output_file, "li %s, %d\n", get_reg_name(1), val);
+                } else{
+                    int var2 = get_var_idx(entry->arg2);
+                    if(vars[var2].slot == -1) vars[var2].slot = make_local_slot();
+                    fprintf(output_file, "lw %s, %d($fp)\n", get_reg_name(1), OFFSET(vars[var2].slot));
+                }
                 const char* op;
                 switch (entry->relop) {
                     case RELOP_EQ: op = "beq"; break;

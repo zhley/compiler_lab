@@ -1,0 +1,145 @@
+FUNCTION main :
+READ t0
+va := t0
+READ t1
+vb := t1
+READ t2
+vc := t2
+t5 := va
+t6 := vb
+t3 := t5 + t6
+t4 := vc
+IF t3 > t4 GOTO label4
+GOTO label1
+LABEL label4 :
+t9 := vb
+t10 := vc
+t7 := t9 + t10
+t8 := va
+IF t7 > t8 GOTO label3
+GOTO label1
+LABEL label3 :
+t13 := va
+t14 := vc
+t11 := t13 + t14
+t12 := vb
+IF t11 > t12 GOTO label0
+GOTO label1
+LABEL label0 :
+t18 := va
+t19 := vb
+t16 := t18 + t19
+t17 := vc
+t15 := t16 + t17
+vcirf := t15
+t20 := va
+t21 := vb
+IF t20 == t21 GOTO label8
+GOTO label6
+LABEL label8 :
+t22 := va
+t23 := vc
+IF t22 == t23 GOTO label5
+GOTO label6
+LABEL label5 :
+t24 := #1
+vtype := t24
+GOTO label7
+LABEL label6 :
+t25 := va
+t26 := vb
+IF t25 == t26 GOTO label9
+GOTO label13
+LABEL label13 :
+t27 := va
+t28 := vc
+IF t27 == t28 GOTO label9
+GOTO label12
+LABEL label12 :
+t29 := vb
+t30 := vc
+IF t29 == t30 GOTO label9
+GOTO label10
+LABEL label9 :
+t31 := #2
+vtype := t31
+GOTO label11
+LABEL label10 :
+t32 := #0
+t37 := va
+t38 := va
+t35 := t37 * t38
+t39 := vb
+t40 := vb
+t36 := t39 * t40
+t33 := t35 + t36
+t41 := vc
+t42 := vc
+t34 := t41 * t42
+IF t33 == t34 GOTO label19
+GOTO label20
+LABEL label19 :
+t32 := #1
+LABEL label20 :
+IF t32 != #0 GOTO label14
+GOTO label18
+LABEL label18 :
+t43 := #0
+t48 := va
+t49 := va
+t46 := t48 * t49
+t50 := vc
+t51 := vc
+t47 := t50 * t51
+t44 := t46 + t47
+t52 := vb
+t53 := vb
+t45 := t52 * t53
+IF t44 == t45 GOTO label21
+GOTO label22
+LABEL label21 :
+t43 := #1
+LABEL label22 :
+IF t43 != #0 GOTO label14
+GOTO label17
+LABEL label17 :
+t54 := #0
+t59 := vb
+t60 := vb
+t57 := t59 * t60
+t61 := vc
+t62 := vc
+t58 := t61 * t62
+t55 := t57 + t58
+t63 := va
+t64 := va
+t56 := t63 * t64
+IF t55 == t56 GOTO label23
+GOTO label24
+LABEL label23 :
+t54 := #1
+LABEL label24 :
+IF t54 != #0 GOTO label14
+GOTO label15
+LABEL label14 :
+t65 := #3
+vtype := t65
+GOTO label16
+LABEL label15 :
+t66 := #0
+vtype := t66
+LABEL label16 :
+LABEL label11 :
+LABEL label7 :
+t68 := vtype
+WRITE t68
+t70 := vcirf
+WRITE t70
+GOTO label2
+LABEL label1 :
+t73 := #1
+t72 := #0 - t73
+WRITE t72
+LABEL label2 :
+t74 := #0
+RETURN t74
