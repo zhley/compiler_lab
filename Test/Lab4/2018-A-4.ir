@@ -1,0 +1,121 @@
+FUNCTION main :
+DEC t0 20
+vx := &t0
+t1 := #0
+vi := t1
+t2 := #5
+vN := t2
+t3 := #0
+vj := t3
+LABEL label0 :
+t4 := vi
+t5 := #5
+IF t4 < t5 GOTO label1
+GOTO label2
+LABEL label1 :
+t7 := vx
+t8 := vi
+t9 := t8 * #4
+t7 := t7 + t9
+READ t6
+*t7 := t6
+t11 := vi
+t12 := #1
+t10 := t11 + t12
+vi := t10
+GOTO label0
+LABEL label2 :
+t13 := vN
+vi := t13
+LABEL label3 :
+t14 := vi
+t15 := #0
+IF t14 > t15 GOTO label4
+GOTO label5
+LABEL label4 :
+LABEL label6 :
+t16 := vj
+t18 := vi
+t19 := #1
+t17 := t18 - t19
+IF t16 < t17 GOTO label7
+GOTO label8
+LABEL label7 :
+t22 := vx
+t23 := vj
+t24 := t23 * #4
+t22 := t22 + t24
+t20 := *t22
+t25 := vx
+t28 := vj
+t29 := #1
+t26 := t28 + t29
+t27 := t26 * #4
+t25 := t25 + t27
+t21 := *t25
+IF t20 > t21 GOTO label9
+GOTO label10
+LABEL label9 :
+t31 := vx
+t32 := vj
+t33 := t32 * #4
+t31 := t31 + t33
+t30 := *t31
+vtemp := t30
+t35 := vx
+t36 := vj
+t37 := t36 * #4
+t35 := t35 + t37
+t38 := vx
+t41 := vj
+t42 := #1
+t39 := t41 + t42
+t40 := t39 * #4
+t38 := t38 + t40
+t34 := *t38
+*t35 := t34
+t44 := vx
+t47 := vj
+t48 := #1
+t45 := t47 + t48
+t46 := t45 * #4
+t44 := t44 + t46
+t43 := vtemp
+*t44 := t43
+LABEL label10 :
+t50 := vj
+t51 := #1
+t49 := t50 + t51
+vj := t49
+GOTO label6
+LABEL label8 :
+t52 := #0
+vj := t52
+t54 := vi
+t55 := #1
+t53 := t54 - t55
+vi := t53
+GOTO label3
+LABEL label5 :
+t56 := #0
+vi := t56
+LABEL label11 :
+t57 := vi
+t58 := #5
+IF t57 < t58 GOTO label12
+GOTO label13
+LABEL label12 :
+t61 := vx
+t62 := vi
+t63 := t62 * #4
+t61 := t61 + t63
+t60 := *t61
+WRITE t60
+t65 := vi
+t66 := #1
+t64 := t65 + t66
+vi := t64
+GOTO label11
+LABEL label13 :
+t67 := #0
+RETURN t67

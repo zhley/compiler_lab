@@ -29,7 +29,6 @@ typedef struct VarMap{
 typedef struct RegDesc {
     int is_free;
     int var_idx;
-    int dirty;
     int next_use; // 寄存器中变量的下一次使用位置, -1表示未计算
 } RegDesc;
 
@@ -112,7 +111,6 @@ void init_allocation(){
     for(int i = 0; i < REG_NUM; i++){
         regs[i].is_free = 1;
         regs[i].var_idx = -1;
-        regs[i].dirty = 0;
         regs[i].next_use = -1;
     }
 }
@@ -141,17 +139,16 @@ int allocate(const char* var_name){
             victim = i;
         }
     }
-    if(regs[victim].dirty){
-        int var_idx = regs[victim].var_idx;
-        if(vars[var_idx].slot == -1){
-            vars[var_idx].slot = make_local_slot(); // 分配局部变量槽
-        }
-        vars[var_idx].reg_idx = -1;
-        fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(victim), OFFSET(vars[var_idx].slot));
+
+    int vic_var_idx = regs[victim].var_idx;
+    if(vars[vic_var_idx].slot == -1){
+        vars[vic_var_idx].slot = make_local_slot(); // 分配局部变量槽
     }
+    vars[vic_var_idx].reg_idx = -1;
+    fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(victim), OFFSET(vars[vic_var_idx].slot));
+
     regs[victim].var_idx = var_idx;
     regs[victim].is_free = 0;
-    regs[victim].dirty = 0;
     regs[victim].next_use = -1;
     vars[var_idx].reg_idx = victim;
     return victim;
@@ -175,6 +172,7 @@ int ensure(const char* var_name){
 void free_if_unused(int cur_ir_idx, int block_end, const char* var_name){
     int var_idx = get_var_idx(var_name);
     int reg_idx = vars[var_idx].reg_idx;
+    if(reg_idx == -1) return;
     int next_use = -1;
     for(int i = cur_ir_idx + 1; i < block_end; i++){
         if((ir_table[i].arg1 && strcmp(ir_table[i].arg1, var_name) == 0) || (ir_table[i].arg2 && strcmp(ir_table[i].arg2, var_name) == 0)){
@@ -188,15 +186,13 @@ void free_if_unused(int cur_ir_idx, int block_end, const char* var_name){
     }
     regs[reg_idx].next_use = next_use;
     if(next_use == -1){
-        if(regs[reg_idx].dirty){
-            if(vars[var_idx].slot == -1){
-                vars[var_idx].slot = make_local_slot();
-            }
-            fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(reg_idx), OFFSET(vars[var_idx].slot));
+        if(vars[var_idx].slot == -1){
+            vars[var_idx].slot = make_local_slot();
         }
+        fprintf(output_file, "sw %s, %d($fp)\n", get_reg_name(reg_idx), OFFSET(vars[var_idx].slot));
+
         regs[reg_idx].is_free = 1;
         regs[reg_idx].var_idx = -1;
-        regs[reg_idx].dirty = 0;
         regs[reg_idx].next_use = -1;
         vars[var_idx].reg_idx = -1;
     }
@@ -257,6 +253,7 @@ void transform_ir(IRInst* ir) {
         // NOTE: 根据中间代码生成的特点, DEC指令后必定是一个ADDRESS指令, 
         // 并且ADDRESS指令也只在这里出现, 所以直接将这两条指令合并, DEC指令直接返回地址.
         if(p->opcode == IR_OP_DEC){
+            ir_count--;
             IRInst* next = p->next;
             assert(next);
             assert(next->opcode == IR_OP_ADDRESS);
@@ -281,6 +278,8 @@ void transform_ir(IRInst* ir) {
 void gencode_func(int begin, int end) {
     int start = begin;
     assert(ir_table[start].opcode == IR_OP_FUNCTION);
+    var_map_size = 0;
+    local_var_cnt = 0;
     func_name = ir_table[start].result;
     if(strcmp(func_name, "main") == 0) fprintf(output_file, "main:\n");
     else fprintf(output_file, "f_%s:\n", func_name);
@@ -321,7 +320,10 @@ void gencode_func(int begin, int end) {
             r = i;
             gencode_block(l, r);
             l = r;
-            while(i < end && ir_table[i].opcode != IR_OP_CALL) i++;
+            while(i < end && ir_table[i].opcode != IR_OP_CALL) {
+                assert(ir_table[i].opcode == IR_OP_ARG);
+                i++;
+            }
             assert(i < end && ir_table[i].opcode == IR_OP_CALL);
             r = i + 1;
             gencode_block(l, r);
@@ -344,7 +346,7 @@ void gencode_func(int begin, int end) {
 
 void spill_all(){
     for(int i = 0; i < REG_NUM; i++){
-        if(!regs[i].is_free && regs[i].dirty){
+        if(!regs[i].is_free){
             int var_idx = regs[i].var_idx;
             if(vars[var_idx].slot == -1){
                 vars[var_idx].slot = make_local_slot();
@@ -400,8 +402,8 @@ void gencode_block(int begin, int end) {
                     fprintf(output_file, "sw %s, %d($sp)\n", get_reg_name(0), (i - 4) * 4);
                 }
             }
-            fprintf(output_file, "addi $sp, $sp, %d\n", (cnt - 4) * 4);
             fprintf(output_file, "jal f_%s\n", ir_table[end - 1].arg1);
+            fprintf(output_file, "addi $sp, $sp, %d\n", (cnt - 4) * 4);
         }
         int ret = get_var_idx(ir_table[end - 1].result);
         if(vars[ret].slot == -1){
@@ -419,14 +421,12 @@ void gencode_block(int begin, int end) {
                     int res = get_imm(entry->arg1) + get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), res);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg1)){
                     int src = ensure(entry->arg2);
                     int val = get_imm(entry->arg1);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "addi %s, %s, %d\n", get_reg_name(dst), get_reg_name(src), val);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg2)){
@@ -434,7 +434,6 @@ void gencode_block(int begin, int end) {
                     int val = get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "addi %s, %s, %d\n", get_reg_name(dst), get_reg_name(src), val);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->result);
                 } else{
@@ -442,7 +441,6 @@ void gencode_block(int begin, int end) {
                     int src2 = ensure(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "add %s, %s, %s\n", get_reg_name(dst), get_reg_name(src1), get_reg_name(src2));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
@@ -454,7 +452,6 @@ void gencode_block(int begin, int end) {
                     int res = get_imm(entry->arg1) - get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), res);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg1)){
                     int src = ensure(entry->arg2);
@@ -462,7 +459,6 @@ void gencode_block(int begin, int end) {
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
                     fprintf(output_file, "sub %s, %s, %s\n", get_reg_name(dst), get_reg_name(dst), get_reg_name(src));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg2)){
@@ -470,7 +466,6 @@ void gencode_block(int begin, int end) {
                     int val = get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "addi %s, %s, %d\n", get_reg_name(dst), get_reg_name(src), -val);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->result);
                 } else{
@@ -478,7 +473,6 @@ void gencode_block(int begin, int end) {
                     int src2 = ensure(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "sub %s, %s, %s\n", get_reg_name(dst), get_reg_name(src1), get_reg_name(src2));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
@@ -490,7 +484,6 @@ void gencode_block(int begin, int end) {
                     int res = get_imm(entry->arg1) * get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), res);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg1)){
                     int src = ensure(entry->arg2);
@@ -498,7 +491,6 @@ void gencode_block(int begin, int end) {
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
                     fprintf(output_file, "mul %s, %s, %s\n", get_reg_name(dst), get_reg_name(dst), get_reg_name(src));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg2)){
@@ -507,7 +499,6 @@ void gencode_block(int begin, int end) {
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
                     fprintf(output_file, "mul %s, %s, %s\n", get_reg_name(dst), get_reg_name(src), get_reg_name(dst));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->result);
                 } else{
@@ -515,7 +506,6 @@ void gencode_block(int begin, int end) {
                     int src2 = ensure(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "mul %s, %s, %s\n", get_reg_name(dst), get_reg_name(src1), get_reg_name(src2));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
@@ -527,7 +517,6 @@ void gencode_block(int begin, int end) {
                     int res = get_imm(entry->arg1) / get_imm(entry->arg2);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), res);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg1)){
                     int src = ensure(entry->arg2);
@@ -536,7 +525,6 @@ void gencode_block(int begin, int end) {
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
                     fprintf(output_file, "div %s, %s\n", get_reg_name(dst), get_reg_name(src));
                     fprintf(output_file, "mflo %s\n", get_reg_name(dst));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
                 } else if(is_imm(entry->arg2)){
@@ -546,7 +534,6 @@ void gencode_block(int begin, int end) {
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
                     fprintf(output_file, "div %s, %s\n", get_reg_name(src), get_reg_name(dst));
                     fprintf(output_file, "mflo %s\n", get_reg_name(dst));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->result);
                 } else{
@@ -555,7 +542,6 @@ void gencode_block(int begin, int end) {
                     int dst = allocate(entry->result);
                     fprintf(output_file, "div %s, %s\n", get_reg_name(src1), get_reg_name(src2));
                     fprintf(output_file, "mflo %s\n", get_reg_name(dst));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->arg2);
                     free_if_unused(i, end, entry->result);
@@ -567,13 +553,11 @@ void gencode_block(int begin, int end) {
                     int val = get_imm(entry->arg1);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "li %s, %d\n", get_reg_name(dst), val);
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->result);
                 } else{
                     int src = ensure(entry->arg1);
                     int dst = allocate(entry->result);
                     fprintf(output_file, "move %s, %s\n", get_reg_name(dst), get_reg_name(src));
-                    regs[dst].dirty = 1;
                     free_if_unused(i, end, entry->arg1);
                     free_if_unused(i, end, entry->result);
                 }
@@ -587,7 +571,6 @@ void gencode_block(int begin, int end) {
                 int dst = allocate(entry->result);
                 int src = ensure(entry->arg1);
                 fprintf(output_file, "lw %s, 0(%s)\n", get_reg_name(dst), get_reg_name(src));
-                regs[dst].dirty = 1;
                 free_if_unused(i, end, entry->arg1);
                 free_if_unused(i, end, entry->result);
                 break;
@@ -662,7 +645,6 @@ void gencode_block(int begin, int end) {
                 int dst = allocate(entry->result);
                 fprintf(output_file, "jal read\n");
                 fprintf(output_file, "move %s, $v0\n", get_reg_name(dst));
-                regs[dst].dirty = 1;
                 free_if_unused(i, end, entry->result);
                 break;
             }
