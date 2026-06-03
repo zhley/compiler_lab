@@ -34,9 +34,9 @@ syntax-c: $(YFILE)
 # 定义的一些伪目标
 .PHONY: clean test testall
 test:
-	./parser ../Test/Lab3/2020-Advanced-A-101.cmm ../Test/Lab3/Lab3/2020-Advanced-A-101.ir
+	./parser ../Test/Lab4/1.cmm ../Test/Lab4/1.s
 testall:
-	for file in ../Test/Lab2/*.cmm; do \
+	for file in ../Test/Lab4/*.cmm; do \
 		echo "Testing $$file..."; \
 		./parser $$file; \
 	done
