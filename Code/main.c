@@ -50,15 +50,15 @@ int main(int argc, char* argv[]){
         if(analyze_semantics(root)) {
             IRInst* ir = translate(root);
 
-            if(argc == 4){
-                FILE* ir_file = fopen(argv[3], "w");
-                if (!ir_file) {
-                    perror(argv[3]);
-                    return 1;
-                }
-                print_ir(ir, ir_file);
-                fclose(ir_file);
-            }
+            // if(argc == 4){
+            //     FILE* ir_file = fopen(argv[3], "w");
+            //     if (!ir_file) {
+            //         perror(argv[3]);
+            //         return 1;
+            //     }
+            //     print_ir(ir, ir_file);
+            //     fclose(ir_file);
+            // }
 
             if(ir){
                 FILE* output_file = fopen(argv[2], "w");
